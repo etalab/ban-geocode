@@ -1,0 +1,4 @@
+flask
+docopt
+elasticsearch
+elasticsearch-dsl
