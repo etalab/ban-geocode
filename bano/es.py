@@ -77,7 +77,7 @@ def import_data(index, filepath, limit=None):
         for row in reader:
             data.append(row_to_doc(row))
             count += 1
-            if count >= limit:
+            if limit and count >= limit:
                 break
             if count % 100000 == 0:
                 bulk(index, data)

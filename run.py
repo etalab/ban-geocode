@@ -15,7 +15,7 @@ Options:
     --host=<string>     server host [default: 127.0.0.1]
     --index=<string>    index name to use in elasticsearch [default: bano]
     --debug             turn on debug mode [default: False]
-    --limit=<number>    add a limit when it makes sense [default: None]
+    --limit=<number>    add a limit when it makes sense [default: 0]
 """
 import os
 
