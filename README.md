@@ -27,7 +27,9 @@ Step to install the python environment:
 
 1. create your virtualenv (named bano here, your can change that to whatever)
 
+    ```
     mkvirtualenv bano --python `which python3.4`
+    ```
 
 1. get the project
 
