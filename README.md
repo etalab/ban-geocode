@@ -9,16 +9,14 @@ You need python3.4 and Elasticsearch >= 1.3.
 For Elasticsearch, grab the `.deb` from http://www.elasticsearch.org/downloads/,
 then:
 
-    `sudo dpkg -i <path/to/elasticsearch.deb>`
+    sudo dpkg -i <path/to/elasticsearch.deb>
 
 You need the `wordending-tokenfilter` ES plugin:
 
-    ```
     git clone https://github.com/ixxi-mobility/elasticsearch-wordending-tokenfilter.git
     cd elasticsearch-wordending-tokenfilter
     make package
     make install
-    ```
 
 
 Step to install the python environment:
@@ -29,7 +27,7 @@ Step to install the python environment:
 
 1. create your virtualenv (named bano here, your can change that to whatever)
 
-    `mkvirtualenv bano --python `which python3.4``
+    mkvirtualenv bano --python `which python3.4`
 
 1. get the project
 
