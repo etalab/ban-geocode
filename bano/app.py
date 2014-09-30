@@ -102,7 +102,10 @@ def api():
     debug = 'debug' in request.args
     data = to_geo_json(results, debug=debug)
     data = json.dumps(data, indent=4 if debug else None)
-    return Response(data, mimetype='application/json')
+    response = Response(data, mimetype='application/json')
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "X-Requested-With"
+    return response
 
 
 def housenumber_first(lang):
