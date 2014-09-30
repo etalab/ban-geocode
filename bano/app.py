@@ -45,6 +45,7 @@ def query_index(q, lon, lat, match_all=True, limit=15):
         functions.append({
             "script_score": {
                 "script": "dist = doc['coordinate'].distanceInKm(lat, lon); 1 / (0.5 - 0.5 * exp(-5*dist/maxDist))",
+                "lang": "groovy",
                 "params": {
                     "lon": lon,
                     "lat": lat,
