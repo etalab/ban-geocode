@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>BANO demo</title>
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css"/>
+    <link rel="stylesheet" href="/static/photon/leaflet.photon.css"/>
+    <style type="text/css">
+        div, ul, li, a, section, nav,
+        h1, h2, h3, h4, h5, h6,
+        hr, input, textarea, footer, header {
+            -moz-box-sizing: border-box;
+            -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        .photon-input {
+            height: 40px;
+            line-height: 40px;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="map" id="map"></div>
+<script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet-src.js"></script>
+<script src="/static/photon/leaflet.photon.js"></script>
+<script type="text/javascript">
+    API_URL = '{{ API_URL }}';
+    TILELAYER = '{{ TILELAYER }}';
+    CENTER = {{ CENTER }};
+    MAXZOOM = {{ MAXZOOM }};
+    var searchPoints = L.geoJson(null, {
+            onEachFeature: function (feature, layer) {
+                layer.bindPopup(feature.properties.name);
+            }
+        });
+    function showSearchPoints (geojson) {
+        searchPoints.clearLayers();
+        searchPoints.addData(geojson);
+    }
+    var map = L.map('map', {scrollWheelZoom: false, zoomControl: false, photonControl: true, photonControlOptions: {resultsHandler: showSearchPoints, placeholder: 'Try me…', position: 'topleft', url: API_URL}});
+    map.setView(CENTER, 12);
+    searchPoints.addTo(map);
+    var tilelayer = L.tileLayer(TILELAYER, {maxZoom: MAXZOOM, attribution: 'Data \u00a9 <a href="http://www.openstreetmap.org/copyright"> OpenStreetMap Contributors </a> Tiles \u00a9 Komoot'}).addTo(map);
+    var zoomControl = new L.Control.Zoom({position: 'topright'}).addTo(map);
+</script>
+</body>
+</html>

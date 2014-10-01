@@ -11,13 +11,29 @@ app = Flask(__name__)
 DEBUG = os.environ.get('DEBUG', True)
 PORT = os.environ.get('BANO_PORT', 5001)
 HOST = os.environ.get('BANO_HOST', '0.0.0.0')
+API_URL = os.environ.get('API_URL', '/api/?')
+CENTER = [
+    float(os.environ.get('BANO_MAP_LAT', 48.7833)),
+    float(os.environ.get('BANO_MAP_LON', 2.2220))
+]
+TILELAYER = os.environ.get(
+    'BANO_MAP_TILELAYER',
+    'http://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png'
+)
+MAXZOOM = os.environ.get('BANO_MAP_MAXZOOM', 19)
 
 es = elasticsearch.Elasticsearch()
 
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template(
+        'index.html',
+        API_URL=API_URL,
+        CENTER=CENTER,
+        TILELAYER=TILELAYER,
+        MAXZOOM=MAXZOOM
+    )
 
 
 def query_index(q, lon, lat, match_all=True, limit=15):
