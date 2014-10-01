@@ -141,12 +141,12 @@ MAPPINGS = {
                         "type": "string",
                         "index_analyzer": "raw_stringanalyser",
                         "copy_to": ["collector"],
-                    }
-                },
-                "alt": {
-                    "type": "string",
-                    "index_analyzer": "raw_stringanalyser",
-                    "copy_to": ["collector"]
+                    },
+                    "alt": {
+                        "type": "string",
+                        "index_analyzer": "raw_stringanalyser",
+                        "copy_to": ["collector"]
+                    },
                 },
             },
             "street": {

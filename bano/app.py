@@ -124,27 +124,23 @@ def api():
     return response
 
 
-def housenumber_first(lang):
-    if lang in ['de', 'it']:
-        return False
-
-    return True
-
-
-def to_geo_json(hits, lang='en', debug=False):
+def to_geo_json(hits, debug=False):
     features = []
     for hit in hits:
 
         properties = {}
 
-        for attr in ['osm_key', 'osm_value', 'postcode', 'housenumber']:
+        flat_keys = [
+            'osm_key', 'osm_value', 'postcode', 'housenumber', 'type',
+            'context'
+        ]
+        for attr in flat_keys:
             if hasattr(hit, attr):
                 properties[attr] = hit[attr]
 
-        # language specific mapping
         for attr in ['name', 'city', 'street']:
             obj = hit.get(attr, {})
-            value = obj.get(lang) or obj.get('default')
+            value = obj.get('default')
             if value:
                 properties[attr] = value
 
@@ -152,16 +148,16 @@ def to_geo_json(hits, lang='en', debug=False):
             housenumber = properties['housenumber'] or ''
             street = properties['street'] or ''
 
-            if housenumber_first(lang):
-                properties['name'] = housenumber + ' ' + street
-            else:
-                properties['name'] = street + ' ' + housenumber
+            properties['name'] = ' '.join([housenumber, street])
 
         feature = {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
-                "coordinates": [hit['coordinate']['lon'], hit['coordinate']['lat']]
+                "coordinates": [
+                    hit['coordinate']['lon'],
+                    hit['coordinate']['lat']
+                ]
             },
             "properties": properties
         }

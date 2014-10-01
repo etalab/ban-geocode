@@ -43,11 +43,32 @@
                 layer.bindPopup(feature.properties.name);
             }
         });
-    function showSearchPoints (geojson) {
+    var showSearchPoints = function (geojson) {
         searchPoints.clearLayers();
         searchPoints.addData(geojson);
     }
-    var map = L.map('map', {scrollWheelZoom: false, zoomControl: false, photonControl: true, photonControlOptions: {resultsHandler: showSearchPoints, placeholder: 'Try me…', position: 'topleft', url: API_URL}});
+    var formatResult = function (feature, el) {
+        var title = L.DomUtil.create('strong', '', el),
+            detailsContainer = L.DomUtil.create('small', '', el),
+            details = [],
+            type = this.formatType(feature);
+        title.innerHTML = feature.properties.name;
+        details.push(feature.properties.type);
+        if (feature.properties.city && feature.properties.city !== feature.properties.name) {
+            details.push(feature.properties.city);
+        }
+        if (feature.properties.context) details.push(feature.properties.context);
+        detailsContainer.innerHTML = details.join(', ');
+    };
+
+    var photonControlOptions = {
+        resultsHandler: showSearchPoints,
+        placeholder: 'Try me…',
+        position: 'topleft',
+        url: API_URL,
+        formatResult: formatResult
+    };
+    var map = L.map('map', {scrollWheelZoom: false, zoomControl: false, photonControl: true, photonControlOptions: photonControlOptions});
     map.setView(CENTER, 12);
     searchPoints.addTo(map);
     var tilelayer = L.tileLayer(TILELAYER, {maxZoom: MAXZOOM, attribution: 'Data \u00a9 <a href="http://www.openstreetmap.org/copyright"> OpenStreetMap Contributors </a> Tiles \u00a9 Komoot'}).addTo(map);
