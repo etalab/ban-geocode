@@ -72,6 +72,7 @@ def row_to_doc(row):
         doc["type"] = 'highway'
         doc['name'] = {"default": row['street']}
     else:
+        doc['importance'] = 1
         doc["type"] = 'place'
         doc['name'] = {"default": row['city']}
     return doc
