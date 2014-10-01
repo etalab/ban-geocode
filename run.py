@@ -3,7 +3,7 @@
 Ixxi lib for importing various data into ElasticSearch.
 Usage:
     run.py serve [--port=<number>] [--host=<string>] [options]
-    run.py import <filepath> [--index=<string>] [options]
+    run.py import <filepath>... [--index=<string>] [options]
 
 Examples:
     python run.py serve --port=5050
@@ -34,5 +34,6 @@ if __name__ == '__main__':
         name = create_index(args['--index'])
         if args['--limit']:
             limit = int(args['--limit'])
-        import_data(name, args['<filepath>'], limit=limit)
+        for filepath in args['<filepath>']:
+            import_data(name, filepath, limit=limit)
         update_aliases(args['--index'], name)

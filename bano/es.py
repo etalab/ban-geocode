@@ -49,14 +49,12 @@ SYNONYMS = DIR.joinpath('resources', 'synonyms.txt')
 
 def row_to_doc(row):
     context = ', '.join([row['dep'], row['region']])
-    return {
-        "type": "house",
+    doc = {
         "importance": 0.0,
         "coordinate": {
             "lat": row['lat'],
             "lon": row['lon']
         },
-        "housenumber": row['housenumber'],
         "postcode": row['postcode'],
         "city": {
             "default": row['city'],
@@ -67,6 +65,16 @@ def row_to_doc(row):
         },
         "context": context,
     }
+    if row['housenumber']:
+        doc["type"] = 'house'
+        doc['housenumber'] = row['housenumber']
+    elif row['street']:
+        doc["type"] = 'highway'
+        doc['name'] = {"default": row['street']}
+    else:
+        doc["type"] = 'place'
+        doc['name'] = {"default": row['city']}
+    return doc
 
 
 def bulk(index, data):
@@ -74,6 +82,7 @@ def bulk(index, data):
 
 
 def import_data(index, filepath, limit=None):
+    print('Importing from', filepath)
     with open(filepath) as f:
         reader = csv.DictReader(f, fieldnames=FIELDS)
         count = 0
