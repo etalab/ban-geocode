@@ -2,6 +2,7 @@ import csv
 import datetime
 import os
 import sys
+from pathlib import Path
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk_index
@@ -41,6 +42,9 @@ FIELDS = [
     'source_id', 'housenumber', 'street', 'postcode', 'city', 'source', 'lat',
     'lon', 'dep', 'region'
 ]
+DIR = Path(__file__).parent
+
+SYNONYMS = DIR.joinpath('resources', 'synonyms.txt')
 
 
 def row_to_doc(row):
@@ -186,7 +190,7 @@ SETTINGS = {
             "stringanalyser": {
                 "char_filter": ["punctuationgreedy"],
                 "filter": [
-                    "word_delimiter", "lowercase", "asciifolding",
+                    "word_delimiter", "lowercase", "asciifolding", "synonyms",
                     "banolength", "unique", "wordending", "banongram"
                 ],
                 "tokenizer": "standard"
@@ -194,7 +198,7 @@ SETTINGS = {
             "search_stringanalyser": {
                 "char_filter": ["punctuationgreedy"],
                 "filter": [
-                    "word_delimiter", "lowercase", "asciifolding",
+                    "word_delimiter", "lowercase", "asciifolding", "synonyms",
                     "banolength", "unique", "wordendingautocomplete"
                 ],
                 "tokenizer": "standard"
@@ -202,7 +206,7 @@ SETTINGS = {
             "raw_stringanalyser": {
                 "char_filter": ["punctuationgreedy"],
                 "filter": [
-                    "word_delimiter", "lowercase", "asciifolding",
+                    "word_delimiter", "lowercase", "asciifolding", "synonyms",
                     "banolength", "unique", "wordending"
                 ],
                 "tokenizer": "standard"
@@ -225,7 +229,11 @@ SETTINGS = {
             "wordendingautocomplete": {
                 "type": "wordending",
                 "mode": "autocomplete"
-            }
+            },
+            "synonyms": {
+                "type": "synonym",
+                "synonyms_path": str(SYNONYMS)
+            },
         }
     }
 }
