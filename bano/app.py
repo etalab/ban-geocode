@@ -36,7 +36,9 @@ def index():
     )
 
 
-def query_index(q, lon, lat, match_all=True, limit=15):
+def query_index(q, lon, lat, match_all=True, limit=15, filters=None):
+    if filters is None:
+        filters = {}
     s = Search(es)
     multi = query.MultiMatch(
         query=q,
@@ -79,12 +81,21 @@ def query_index(q, lon, lat, match_all=True, limit=15):
     )
 
     s = s.query(fscore)
-    filters = F('or', [
-        F('missing', field="housenumber"),
-        F({"query": {"match": {"housenumber": {"query": q, "analyzer": "standard"}}}}),
-        F('exists', field="name.default")
-    ])
-    s = s.filter(filters)
+    if not filters.get('type') == 'house':
+        # Only filter out 'house' if we are not explicitly asking for this
+        # type.
+        filter_house = F('or', [
+            F('missing', field="housenumber"),
+            F({"query": {"match": {"housenumber": {"query": q, "analyzer": "standard"}}}}),
+            F('exists', field="name.default")
+        ])
+    s = s.filter(filter_house)
+    if filters:
+        # We are not using real filters here, because filters are not analyzed,
+        # so for example "city=Chauny" will not match, because "chauny" is in
+        # the index instead.
+        for k, v in filters.items():
+            s = s.query({'match': {k: v}})
     if DEBUG:
         print(json.dumps(s.to_dict()))
     return s.execute()
@@ -108,12 +119,23 @@ def api():
     if not query:
         abort(400, "missing search term 'q': /?q=berlin")
 
-    results = query_index(query, lon, lat, limit=limit)
+    filters = {}
+    keys = ['type', 'city', 'postcode', 'housenumber', 'street']
+    nested = ['street', 'city']
+    for key in keys:
+        value = request.args.get(key)
+        if value:
+            if key in nested:
+                key = '{}.default'.format(key)
+            filters[key] = value
+
+    results = query_index(query, lon, lat, limit=limit, filters=filters)
 
     if len(results.hits) < 1:
         # No result could be found, query index again and don't expect to match
         # all search terms.
-        results = query_index(query, lon, lat, match_all=False, limit=limit)
+        results = query_index(query, lon, lat,
+                              match_all=False, limit=limit, filters=filters)
 
     debug = 'debug' in request.args
     data = to_geo_json(results, debug=debug)
