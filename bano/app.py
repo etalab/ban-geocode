@@ -2,7 +2,7 @@ import json
 import os
 
 import elasticsearch
-from elasticsearch_dsl import Search, Q, query
+from elasticsearch_dsl import Search, Q
 from elasticsearch_dsl.filter import F
 from flask import Flask, render_template, request, abort, Response
 
@@ -40,17 +40,30 @@ def query_index(q, lon, lat, match_all=True, limit=15, filters=None):
     if filters is None:
         filters = {}
     s = Search(es)
-    multi = query.MultiMatch(
-        query=q,
-        type="best_fields",
-        analyzer="search_stringanalyser",
-        minimum_should_match='100%' if match_all else -1,
-        fields=[
-            "name.default^3",
-            "collector"
-        ],
-        fuzziness=1,
-        prefix_length=3
+    should_match = '100%' if match_all else -1
+    match = Q(
+        'bool',
+        must=[Q('match', collector={
+            'fuzziness': 1,
+            'prefix_length': 2,
+            'query': q,
+            'minimum_should_match': should_match,
+            'analyzer': 'search_stringanalyser'
+        })],
+        should=[
+            Q('match', **{'name.default': {
+                'query': q,
+                'boost': 200
+            }}),
+            Q('match', **{'street.default': {
+                'query': q,
+                'boost': 100
+            }}),
+            Q('match', **{'city.default': {
+                'query': q,
+                'boost': 50
+            }}),
+        ]
     )
 
     functions = [{
@@ -76,7 +89,7 @@ def query_index(q, lon, lat, match_all=True, limit=15, filters=None):
         'function_score',
         score_mode="multiply",
         boost_mode="multiply",
-        query=multi,
+        query=match,
         functions=functions
     )
 
