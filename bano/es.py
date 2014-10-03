@@ -112,7 +112,7 @@ MAPPINGS = {
             "importance": {"type": "float"},
             "housenumber": {
                 "type": "string",
-                "index": "not_analyzed",
+                "index_analyzer": "raw_stringanalyser",
                 "copy_to": ["collector"]
             },
             "coordinate": {"type": "geo_point"},

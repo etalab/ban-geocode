@@ -86,7 +86,7 @@ def query_index(q, lon, lat, match_all=True, limit=15, filters=None):
         # type.
         filter_house = F('or', [
             F('missing', field="housenumber"),
-            F({"query": {"match": {"housenumber": {"query": q, "analyzer": "standard"}}}}),
+            F({"query": {"match": {"housenumber": {"query": q, "analyzer": "raw_stringanalyser"}}}}),
             F('exists', field="name.default")
         ])
     s = s.filter(filter_house)
