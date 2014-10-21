@@ -94,7 +94,7 @@ def query_index(q, lon, lat, match_all=True, limit=15, filters=None):
     )
 
     s = s.query(fscore)
-    if not filters.get('type') == 'house':
+    if not filters.get('type') == 'housenumber':
         # Only filter out 'house' if we are not explicitly asking for this
         # type.
         filter_house = F('or', [

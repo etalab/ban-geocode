@@ -40,7 +40,7 @@ def update_aliases(alias, index):
 DUMPPATH = os.environ.get('BANO_DUMPPATH', '/tmp')
 FIELDS = [
     'source_id', 'housenumber', 'street', 'postcode', 'city', 'source', 'lat',
-    'lon', 'dep', 'region'
+    'lon', 'dep', 'region', 'type'
 ]
 DIR = Path(__file__).parent
 
@@ -49,6 +49,19 @@ SYNONYMS = DIR.joinpath('resources', 'synonyms.txt')
 
 def row_to_doc(row):
     context = ', '.join([row['dep'], row['region']])
+    # type can be:
+    # - number => housenumber
+    # - street => street
+    # - hamlet => locality found in OSM as place=hamlet
+    # - place => locality not found in OSM
+    # - village => village
+    # - town => town
+    # - city => city
+    type_ = row['type']
+    if type_ == 'number':
+        type_ = 'housenumber'
+    elif type_ in ['hamlet', 'place']:
+        type_ = 'locality'
     doc = {
         "importance": 0.0,
         "coordinate": {
@@ -64,16 +77,14 @@ def row_to_doc(row):
             "default": row['street'],
         },
         "context": context,
+        "type": type_,
     }
-    if row['housenumber']:
-        doc["type"] = 'house'
+    if type_ == 'housenumber':
         doc['housenumber'] = row['housenumber']
-    elif row['street']:
-        doc["type"] = 'highway'
+    elif type_ in ['street', 'locality']:
         doc['name'] = {"default": row['street']}
-    else:
+    elif type_ in ['village', 'town', 'city']:
         doc['importance'] = 1
-        doc["type"] = 'place'
         doc['name'] = {"default": row['city']}
     return doc
 
@@ -85,7 +96,7 @@ def bulk(index, data):
 def import_data(index, filepath, limit=None):
     print('Importing from', filepath)
     with open(filepath) as f:
-        reader = csv.DictReader(f, fieldnames=FIELDS)
+        reader = csv.DictReader(f, fieldnames=FIELDS, delimiter='|')
         count = 0
         data = []
         for row in reader:
