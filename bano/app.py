@@ -181,7 +181,7 @@ def to_geo_json(hits, debug=False):
 
         if not 'name' in properties and 'housenumber' in properties:
             housenumber = properties['housenumber'] or ''
-            street = properties['street'] or ''
+            street = properties.get('street', '')
 
             properties['name'] = ' '.join([housenumber, street])
 
