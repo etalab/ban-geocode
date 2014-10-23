@@ -21,6 +21,7 @@ TILELAYER = os.environ.get(
     'http://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png'
 )
 MAXZOOM = os.environ.get('BANO_MAP_MAXZOOM', 19)
+INDEX = os.environ.get('BANO_INDEX', 'bano')
 
 es = elasticsearch.Elasticsearch()
 
@@ -39,7 +40,7 @@ def index():
 def query_index(q, lon, lat, match_all=True, limit=15, filters=None):
     if filters is None:
         filters = {}
-    s = Search(es)
+    s = Search(es).index(INDEX)
     should_match = '100%' if match_all else -1
     match = Q(
         'bool',
