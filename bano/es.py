@@ -39,7 +39,7 @@ def update_aliases(alias, index):
 
 DUMPPATH = os.environ.get('BANO_DUMPPATH', '/tmp')
 FIELDS = [
-    'source_id', 'housenumber', 'street', 'postcode', 'city', 'source', 'lat',
+    'source_id', 'housenumber', 'name', 'postcode', 'city', 'source', 'lat',
     'lon', 'dep', 'region', 'type'
 ]
 DIR = Path(__file__).parent
@@ -73,19 +73,20 @@ def row_to_doc(row):
             "default": row['city'],
         },
         "country": "France",
-        "street": {
-            "default": row['street'],
-        },
         "context": context,
         "type": type_,
     }
     if type_ == 'housenumber':
         doc['housenumber'] = row['housenumber']
+        doc['street'] = {'default': row['name']}
     elif type_ in ['street', 'locality']:
-        doc['name'] = {"default": row['street']}
+        doc['name'] = {"default": row['name']}
     elif type_ in ['village', 'town', 'city']:
         doc['importance'] = 1
-        doc['name'] = {"default": row['city']}
+        # Sometimes, a village is in reality an hamlet, so it has both a name
+        # (the hamlet name) and a city (the administrative entity it belongs
+        # to), this is why we first look if a name exists.
+        doc['name'] = {"default": row.get('name', row['city'])}
     return doc
 
 
