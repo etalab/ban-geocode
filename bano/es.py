@@ -81,12 +81,14 @@ def row_to_doc(row):
         doc['street'] = {'default': row['name']}
     elif type_ in ['street', 'locality']:
         doc['name'] = {"default": row['name']}
-    elif type_ in ['village', 'town', 'city']:
+    elif type_ in ['village', 'town', 'city', 'commune']:
         doc['importance'] = 1
         # Sometimes, a village is in reality an hamlet, so it has both a name
         # (the hamlet name) and a city (the administrative entity it belongs
         # to), this is why we first look if a name exists.
-        doc['name'] = {"default": row.get('name', row['city'])}
+        doc['name'] = {'default': row.get('name') or row.get('city')}
+    else:
+        doc['name'] = {'default': row.get('name')}
     return doc
 
 
