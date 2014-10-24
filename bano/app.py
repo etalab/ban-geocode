@@ -1,5 +1,7 @@
 import json
 import os
+import csv
+import io
 
 import elasticsearch
 from elasticsearch_dsl import Search, Q
@@ -11,7 +13,7 @@ app = Flask(__name__)
 DEBUG = os.environ.get('DEBUG', True)
 PORT = os.environ.get('BANO_PORT', 5001)
 HOST = os.environ.get('BANO_HOST', '0.0.0.0')
-API_URL = os.environ.get('API_URL', '/api/?')
+API_URL = os.environ.get('API_URL', '/search/?')
 CENTER = [
     float(os.environ.get('BANO_MAP_LAT', 48.7833)),
     float(os.environ.get('BANO_MAP_LON', 2.2220))
@@ -37,7 +39,7 @@ def index():
     )
 
 
-def query_index(q, lon, lat, match_all=True, limit=15, filters=None):
+def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
     if filters is None:
         filters = {}
     s = Search(es).index(INDEX)
@@ -110,13 +112,18 @@ def query_index(q, lon, lat, match_all=True, limit=15, filters=None):
         # the index instead.
         for k, v in filters.items():
             s = s.query({'match': {k: v}})
+    return s
+
+
+def query_index(q, lon, lat, match_all=True, limit=15, filters=None):
+    s = make_query(q, lon, lat, match_all, limit, filters)
     if DEBUG:
         print(json.dumps(s.to_dict()))
     return s.execute()
 
 
-@app.route('/api/')
-def api():
+@app.route('/search/')
+def search():
 
     try:
         lon = float(request.args.get('lon'))
@@ -158,6 +165,64 @@ def api():
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "X-Requested-With"
     return response
+
+
+@app.route('/multisearch/', methods=['GET', 'POST'])
+def multi_search():
+    if request.method == 'POST':
+        f = request.files['data']
+        dialect = csv.Sniffer().sniff(f.read(1024).decode())
+        f.seek(0)
+        has_header = csv.Sniffer().has_header(f.read(1024).decode())
+        f.seek(0)
+        if not has_header:
+            abort(400, "missing column headers in csv file")
+        headers = next(f.stream).decode().strip('\n').split(dialect.delimiter)
+        columns = request.form.getlist('columns') or headers
+        content = f.read().decode().split('\n')
+        rows = csv.DictReader(content, fieldnames=headers, dialect=dialect)
+        search = []
+        for row in rows:
+            q = ' '.join({k: row[k] for k in columns}.values())
+            query = make_query(q, limit=1)
+            search.append({'index': 'bano'})
+            search.append(query.to_dict())
+        responses = es.msearch(search)['responses']
+        fieldnames = headers
+        fieldnames.extend(['latitude', 'longitude'])
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames, dialect=dialect)
+        writer.writeheader()
+        rows = csv.DictReader(content, fieldnames=headers, dialect=dialect)
+        for row, response in zip(rows, responses):
+            if response['hits']['total']:
+                source = response['hits']['hits'][0]['_source']
+                row.update({
+                    'latitude': source['coordinate']['lat'],
+                    'longitude': source['coordinate']['lon']
+                })
+            writer.writerow(row)
+        output.seek(0)
+        headers = {
+            'Content-Disposition': 'attachment',
+            'Content-Type': 'text/csv'
+        }
+        return output.read(), 200, headers
+    if 'text/html' in request.headers['Accept']:
+        return '''
+        <!doctype html>
+        <title>Geococage de masse</title>
+        <h1>Geococage de masse</h1>
+        <form action="" method=post enctype=multipart/form-data>
+          <p><input type=file name=data><br />
+             <select multiple name=columns>
+                 <option value=housenumber>housenumber</option>
+                 <option value=name>name</option>
+                 <option value=city>city</option>
+             </select><br />
+             <input type=submit value=Envoyer>
+        </form>
+        '''
 
 
 def to_geo_json(hits, debug=False):
