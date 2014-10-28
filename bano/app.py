@@ -175,12 +175,13 @@ def multi_search():
         f.seek(0)
         headers = next(f.stream).decode().strip('\n').split(dialect.delimiter)
         columns = request.form.getlist('columns') or headers
+        match_all = is_bool(request.form.get('match_all'))
         content = f.read().decode().split('\n')
         rows = csv.DictReader(content, fieldnames=headers, dialect=dialect)
         search = []
         for row in rows:
             q = ' '.join({k: row[k] for k in columns}.values())
-            query = make_query(q, limit=1)
+            query = make_query(q, limit=1, match_all=match_all)
             search.append({'index': 'bano'})
             search.append(query.to_dict())
         responses = []
@@ -274,3 +275,8 @@ def to_flat_address(hit):
         hit.get('city', {}).get('default', ''),
     ]
     return " ".join([e for e in els if e])
+
+
+def is_bool(what):
+    what = str(what).lower()
+    return what in ['true', '1']

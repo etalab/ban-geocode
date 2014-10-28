@@ -7,6 +7,7 @@ var CSVToGeocode = function (options) {
         chosenColumns = document.querySelector('#chosenColumns'),
         browseLink = document.querySelector('#browseLink'),
         fileInput = document.querySelector('#fileInput'),
+        matchAll = document.querySelector('input[name="matchAll"]'),
         submitButton = document.querySelector('#submitButton');
 
     var stop = function (e) {
@@ -21,6 +22,7 @@ var CSVToGeocode = function (options) {
         for (var i = 0; i < columns.length; i++) {
             formData.append('columns', columns[i].id);
         }
+        formData.append('match_all', !!matchAll.checked);
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 window.URL = window.URL || window.webkitURL;
