@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset=utf-8>
+  <title>Géocodage de masse</title>
+  <script src="/static/csvtogeocode.js"></script>
+  <link rel="stylesheet" type="text/css" href="/static/csvtogeocode.css">
+</head>
+<body>
+<section id="wrapper">
+  <header>
+    <h1>Géocodage un fichier csv</h1>
+  </header>
+
+  <article>
+    <h2>1. Choose a file</h2>
+    <input type="file" id="fileInput" />
+    <div id="holder">Drag your file here, or <a id="browseLink" href="#">browse</a></div> 
+    <h2>2. Choose the columns to consider</h2>
+    <ul id="availableColumns"></ul>
+    <ul id="chosenColumns"></ul>
+    <h2>3. Run the process</h2>
+    <input type="submit" value="Geocode!" id="submitButton" disabled="disabled" />
+  </article>
+  <script type="text/javascript">
+    CSVToGeocode();
+  </script>
+  <footer>BANO Project</footer> 
+</section>
+</body>
+</html>

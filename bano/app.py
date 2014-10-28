@@ -25,7 +25,7 @@ TILELAYER = os.environ.get(
 MAXZOOM = os.environ.get('BANO_MAP_MAXZOOM', 19)
 INDEX = os.environ.get('BANO_INDEX', 'bano')
 
-es = elasticsearch.Elasticsearch()
+es = elasticsearch.Elasticsearch(timeout=999999999)
 
 
 @app.route('/')
@@ -173,10 +173,6 @@ def multi_search():
         f = request.files['data']
         dialect = csv.Sniffer().sniff(f.read(1024).decode())
         f.seek(0)
-        has_header = csv.Sniffer().has_header(f.read(1024).decode())
-        f.seek(0)
-        if not has_header:
-            abort(400, "missing column headers in csv file")
         headers = next(f.stream).decode().strip('\n').split(dialect.delimiter)
         columns = request.form.getlist('columns') or headers
         content = f.read().decode().split('\n')
@@ -187,20 +183,32 @@ def multi_search():
             query = make_query(q, limit=1)
             search.append({'index': 'bano'})
             search.append(query.to_dict())
-        responses = es.msearch(search)['responses']
+        responses = []
+        start = 0
+        step = 200
+        while start <= len(search):
+            chunk = search[start:start + step]
+            start += step
+            responses.extend(es.msearch(chunk)['responses'])
         fieldnames = headers
-        fieldnames.extend(['latitude', 'longitude'])
+        fieldnames.extend(['latitude', 'longitude', 'address'])
         output = io.StringIO()
         writer = csv.DictWriter(output, fieldnames, dialect=dialect)
         writer.writeheader()
         rows = csv.DictReader(content, fieldnames=headers, dialect=dialect)
         for row, response in zip(rows, responses):
-            if response['hits']['total']:
-                source = response['hits']['hits'][0]['_source']
-                row.update({
-                    'latitude': source['coordinate']['lat'],
-                    'longitude': source['coordinate']['lon']
-                })
+            if not 'error' in response and response['hits']['total']:
+                try:
+                    source = response['hits']['hits'][0]['_source']
+                except IndexError:
+                    # Yes, we can have a total > 0 AND no hits :/
+                    pass
+                else:
+                    row.update({
+                        'latitude': source['coordinate']['lat'],
+                        'longitude': source['coordinate']['lon'],
+                        'address': to_flat_address(source),
+                    })
             writer.writerow(row)
         output.seek(0)
         headers = {
@@ -209,20 +217,7 @@ def multi_search():
         }
         return output.read(), 200, headers
     if 'text/html' in request.headers['Accept']:
-        return '''
-        <!doctype html>
-        <title>Geococage de masse</title>
-        <h1>Geococage de masse</h1>
-        <form action="" method=post enctype=multipart/form-data>
-          <p><input type=file name=data><br />
-             <select multiple name=columns>
-                 <option value=housenumber>housenumber</option>
-                 <option value=name>name</option>
-                 <option value=city>city</option>
-             </select><br />
-             <input type=submit value=Envoyer>
-        </form>
-        '''
+        return render_template('multisearch.html')
 
 
 def to_geo_json(hits, debug=False):
@@ -269,3 +264,13 @@ def to_geo_json(hits, debug=False):
         "type": "FeatureCollection",
         "features": features
     }
+
+
+def to_flat_address(hit):
+    els = [
+        hit.get('housenumber', ''),
+        hit.get('street', {}).get('default', ''),
+        hit.get('postcode', ''),
+        hit.get('city', {}).get('default', ''),
+    ]
+    return " ".join([e for e in els if e])
