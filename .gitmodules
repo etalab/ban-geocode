@@ -1,3 +1,0 @@
-[submodule "bano/static/photon"]
-	path = bano/static/photon
-	url = https://github.com/komoot/leaflet.photon.git
