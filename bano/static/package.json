@@ -1,0 +1,13 @@
+{
+  "name": "bano-geocode",
+  "version": "1.0.0",
+  "description": "",
+  "main": "csvtogeocode.js",
+  "dependencies": {
+    "git://github.com/yohanboniface/csvtogeocoder-ui.git": "*",
+    "leaflet.photon": "^0.2.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
