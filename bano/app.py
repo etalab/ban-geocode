@@ -271,6 +271,7 @@ def to_flat_address(hit):
     els = [
         hit.get('housenumber', ''),
         hit.get('street', {}).get('default', ''),
+        hit.get('name', {}).get('default', ''),
         hit.get('postcode', ''),
         hit.get('city', {}).get('default', ''),
     ]
