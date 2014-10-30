@@ -48,7 +48,9 @@ SYNONYMS = DIR.joinpath('resources', 'synonyms.txt')
 
 
 def row_to_doc(row):
-    context = ', '.join([row['dep'], row['region']])
+    dep_id_len = 3 if row['source_id'].startswith('97') else 2
+    dep_id = str(row['source_id'])[:dep_id_len]
+    context = ', '.join([dep_id, row['dep'], row['region']])
     # type can be:
     # - number => housenumber
     # - street => street
