@@ -2,7 +2,7 @@
 r => rue
 av, ave => avenue
 rte => route
-ch => chemin
+ch, che => chemin
 bd => boulevard
 st => saint
 ste => sainte
@@ -51,3 +51,5 @@ xvii, 17 => dix sept
 xviii, 18 => dix huit
 xix, 19 => dix neuf
 xx, 20 => vingt
+mal => marechal
+gal => general
