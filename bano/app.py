@@ -2,6 +2,7 @@ import json
 import os
 import csv
 import io
+import logging
 
 import elasticsearch
 from elasticsearch_dsl import Search, Q
@@ -26,6 +27,17 @@ MAXZOOM = os.environ.get('BANO_MAP_MAXZOOM', 19)
 INDEX = os.environ.get('BANO_INDEX', 'bano')
 
 es = elasticsearch.Elasticsearch(timeout=999999999)
+
+
+class NotFoundLogHandler(logging.FileHandler):
+
+    def __init__(filename, *args, **kwargs):
+        super().__init__('notfound.log', *args, **kwargs)
+
+
+notfound = logging.getLogger('notfound')
+notfound.setLevel(logging.DEBUG)
+notfound.addHandler(NotFoundLogHandler())
 
 
 @app.route('/')
@@ -112,7 +124,7 @@ def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
         # the index instead.
         for k, v in filters.items():
             s = s.query({'match': {k: v}})
-    return s
+    return s.extra(size=limit)
 
 
 def query_index(q, lon, lat, match_all=True, limit=15, filters=None):
@@ -158,6 +170,9 @@ def search():
         results = query_index(query, lon, lat,
                               match_all=False, limit=limit, filters=filters)
 
+    if len(results.hits) < 1:
+        notfound.debug(query)
+
     debug = 'debug' in request.args
     data = to_geo_json(results, debug=debug)
     data = json.dumps(data, indent=4 if debug else None)
@@ -179,8 +194,10 @@ def multi_search():
         content = f.read().decode().split('\n')
         rows = csv.DictReader(content, fieldnames=headers, dialect=dialect)
         search = []
+        queries = []
         for row in rows:
             q = ' '.join({k: row[k] for k in columns}.values())
+            queries.append(q)
             query = make_query(q, limit=1, match_all=match_all)
             search.append({'index': 'bano'})
             search.append(query.to_dict())
@@ -197,19 +214,22 @@ def multi_search():
         writer = csv.DictWriter(output, fieldnames, dialect=dialect)
         writer.writeheader()
         rows = csv.DictReader(content, fieldnames=headers, dialect=dialect)
-        for row, response in zip(rows, responses):
-            if not 'error' in response and response['hits']['total']:
-                try:
-                    source = response['hits']['hits'][0]['_source']
-                except IndexError:
-                    # Yes, we can have a total > 0 AND no hits :/
-                    pass
+        for row, response, q in zip(rows, responses, queries):
+            if not 'error' in response:
+                if response['hits']['total']:
+                    try:
+                        source = response['hits']['hits'][0]['_source']
+                    except IndexError:
+                        # Yes, we can have a total > 0 AND no hits :/
+                        pass
+                    else:
+                        row.update({
+                            'latitude': source['coordinate']['lat'],
+                            'longitude': source['coordinate']['lon'],
+                            'address': to_flat_address(source),
+                        })
                 else:
-                    row.update({
-                        'latitude': source['coordinate']['lat'],
-                        'longitude': source['coordinate']['lon'],
-                        'address': to_flat_address(source),
-                    })
+                    notfound.debug(q)
             writer.writerow(row)
         output.seek(0)
         headers = {
