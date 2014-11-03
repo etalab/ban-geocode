@@ -129,7 +129,7 @@ MAPPINGS = {
             "importance": {"type": "float"},
             "housenumber": {
                 "type": "string",
-                "index_analyzer": "housenumber_analyser",
+                "index_analyzer": "housenumber_analyzer",
                 "copy_to": ["collector"]
             },
             "coordinate": {"type": "geo_point"},
@@ -166,12 +166,12 @@ MAPPINGS = {
                 "properties": {
                     "default": {
                         "type": "string",
-                        "index_analyzer": "raw_stringanalyser",
+                        "index_analyzer": "raw_stringanalyzer",
                         "copy_to": ["collector"],
                     },
                     "alt": {
                         "type": "string",
-                        "index_analyzer": "raw_stringanalyser",
+                        "index_analyzer": "raw_stringanalyzer",
                         "copy_to": ["collector"]
                     },
                 },
@@ -192,11 +192,11 @@ MAPPINGS = {
             },
             "collector": {
                 "type": "string",
-                "analyzer": "stringanalyser",
+                "analyzer": "stringanalyzer",
                 "fields": {
                     "raw": {
                         "type": "string",
-                        "analyzer": "raw_stringanalyser"
+                        "analyzer": "raw_stringanalyzer"
                     }
                 }
             },
@@ -214,7 +214,7 @@ SETTINGS = {
             }
         },
         "analyzer": {
-            "stringanalyser": {
+            "stringanalyzer": {
                 "char_filter": ["punctuationgreedy"],
                 "filter": [
                     "word_delimiter", "lowercase", "asciifolding", "synonyms",
@@ -222,7 +222,7 @@ SETTINGS = {
                 ],
                 "tokenizer": "standard"
             },
-            "search_stringanalyser": {
+            "search_stringanalyzer": {
                 "char_filter": ["punctuationgreedy"],
                 "filter": [
                     "word_delimiter", "lowercase", "asciifolding", "synonyms",
@@ -230,7 +230,7 @@ SETTINGS = {
                 ],
                 "tokenizer": "standard"
             },
-            "raw_stringanalyser": {
+            "raw_stringanalyzer": {
                 "char_filter": ["punctuationgreedy"],
                 "filter": [
                     "word_delimiter", "lowercase", "asciifolding", "synonyms",
@@ -238,7 +238,7 @@ SETTINGS = {
                 ],
                 "tokenizer": "standard"
             },
-            "housenumber_analyser": {
+            "housenumber_analyzer": {
                 "char_filter": ["punctuationgreedy"],
                 "filter": [
                     "word_delimiter", "lowercase", "asciifolding", "wordending"

@@ -63,7 +63,7 @@ def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
             'prefix_length': 2,
             'query': q,
             'minimum_should_match': should_match,
-            'analyzer': 'search_stringanalyser'
+            'analyzer': 'search_stringanalyzer'
         })],
         should=[
             Q('match', **{'name.default': {
@@ -114,7 +114,7 @@ def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
         # type.
         filter_house = F('or', [
             F('missing', field="housenumber"),
-            F({"query": {"match": {"housenumber": {"query": q, "analyzer": "housenumber_analyser"}}}}),
+            F({"query": {"match": {"housenumber": {"query": q, "analyzer": "housenumber_analyzer"}}}}),
             F('exists', field="name.default")
         ])
     s = s.filter(filter_house)
