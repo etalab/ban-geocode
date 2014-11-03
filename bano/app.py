@@ -114,7 +114,7 @@ def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
         # type.
         filter_house = F('or', [
             F('missing', field="housenumber"),
-            F({"query": {"match": {"housenumber": {"query": q, "analyzer": "raw_stringanalyser"}}}}),
+            F({"query": {"match": {"housenumber": {"query": q, "analyzer": "housenumber_analyser"}}}}),
             F('exists', field="name.default")
         ])
     s = s.filter(filter_house)

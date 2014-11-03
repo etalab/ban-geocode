@@ -129,7 +129,7 @@ MAPPINGS = {
             "importance": {"type": "float"},
             "housenumber": {
                 "type": "string",
-                "index_analyzer": "raw_stringanalyser",
+                "index_analyzer": "housenumber_analyser",
                 "copy_to": ["collector"]
             },
             "coordinate": {"type": "geo_point"},
@@ -235,6 +235,13 @@ SETTINGS = {
                 "filter": [
                     "word_delimiter", "lowercase", "asciifolding", "synonyms",
                     "banolength", "unique", "wordending"
+                ],
+                "tokenizer": "standard"
+            },
+            "housenumber_analyser": {
+                "char_filter": ["punctuationgreedy"],
+                "filter": [
+                    "word_delimiter", "lowercase", "asciifolding", "wordending"
                 ],
                 "tokenizer": "standard"
             }
