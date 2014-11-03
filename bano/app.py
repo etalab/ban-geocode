@@ -186,9 +186,9 @@ def search():
 def multi_search():
     if request.method == 'POST':
         f = request.files['data']
-        dialect = csv.Sniffer().sniff(f.read(1024).decode())
-        f.seek(0)
-        headers = next(f.stream).decode().strip('\n').split(dialect.delimiter)
+        first_line = next(f.stream).decode().strip('\n')
+        dialect = csv.Sniffer().sniff(first_line)
+        headers = first_line.split(dialect.delimiter)
         columns = request.form.getlist('columns') or headers
         match_all = is_bool(request.form.get('match_all'))
         content = f.read().decode().split('\n')
