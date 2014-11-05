@@ -250,7 +250,7 @@ SETTINGS = {
             "banongram": {
                 "min_gram": "2",
                 "type": "edgeNGram",
-                "max_gram": "15"
+                "max_gram": "20"  # Scharrachbergheim => 17
             },
             "wordending": {
                 "type": "wordending",
