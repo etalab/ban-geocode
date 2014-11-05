@@ -33,6 +33,7 @@
     <div class="map" id="map"></div>
 <script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet-src.js"></script>
 <script src="/static/node_modules/leaflet.photon/leaflet.photon.js"></script>
+<script src="/static/node_modules/leaflet-hash/leaflet-hash.js"></script>
 <script type="text/javascript">
     API_URL = '{{ API_URL }}';
     TILELAYER = '{{ TILELAYER }}';
@@ -71,6 +72,7 @@
     var map = L.map('map', {zoomControl: false, photonControl: true, photonControlOptions: photonControlOptions});
     map.setView(CENTER, 12);
     searchPoints.addTo(map);
+    new L.Hash(map);
     var tilelayer = L.tileLayer(TILELAYER, {maxZoom: MAXZOOM, attribution: 'Data \u00a9 <a href="http://www.openstreetmap.org/copyright"> OpenStreetMap Contributors </a> Tiles \u00a9 Komoot'}).addTo(map);
     var zoomControl = new L.Control.Zoom({position: 'topright'}).addTo(map);
 </script>

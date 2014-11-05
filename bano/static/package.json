@@ -5,6 +5,7 @@
   "main": "csvtogeocode.js",
   "dependencies": {
     "csvtogeocoder-ui": "git://github.com/yohanboniface/csvtogeocoder-ui.git",
+    "leaflet-hash": "^0.2.1",
     "leaflet.photon": "^0.2.0"
   },
   "scripts": {
