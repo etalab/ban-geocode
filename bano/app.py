@@ -3,6 +3,7 @@ import os
 import csv
 import io
 import logging
+import re
 
 import elasticsearch
 from elasticsearch_dsl import Search, Q
@@ -51,11 +52,28 @@ def index():
     )
 
 
+def preprocess(q):
+    q = re.sub('(Cedex|Cédex) ?[\d]*', '', q, flags=re.IGNORECASE)
+    q = re.sub('bp ?[\d]*', '', q, flags=re.IGNORECASE)
+    q = re.sub('cs ?[\d]*', '', q, flags=re.IGNORECASE)
+    q = re.sub(' {2,}', ' ', q, flags=re.IGNORECASE)
+    q = q.strip()
+    return q
+
+
+def match_address(q):
+    m = re.search('([\d]*(,? )?(avenue|rue|boulevard|allées?|impasse|place) .*([\d]{5})?).*', q, flags=re.IGNORECASE)
+    if m:
+        return m.group()
+
+
 def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
     if filters is None:
         filters = {}
     s = Search(es).index(INDEX)
-    should_match = '100%' if match_all else -1
+    should_match = '100%' if match_all else '2<-1 6<-2 8<-3 10<-50%'
+    # if not match_all:
+    #     q = preprocess(q)
     match = Q(
         'bool',
         must=[Q('match', collector={
@@ -163,6 +181,24 @@ def search():
             filters[key] = value
 
     results = query_index(query, lon, lat, limit=limit, filters=filters)
+
+    if len(results.hits) < 1:
+        query = preprocess(query)
+        results = query_index(query, lon, lat,
+                              match_all=True, limit=limit, filters=filters)
+
+    if len(results.hits) < 1:
+        # Try without any number.
+        no_num = re.sub('[\d]*', '', query)
+        results = query_index(no_num, lon, lat,
+                              match_all=True, limit=limit, filters=filters)
+
+    if len(results.hits) < 1:
+        # Try matching a standard address pattern.
+        match = match_address(query)
+        if match:
+            results = query_index(match, lon, lat,
+                                  match_all=False, limit=limit, filters=filters)
 
     if len(results.hits) < 1:
         # No result could be found, query index again and don't expect to match
