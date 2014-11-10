@@ -5,6 +5,7 @@
     <title>BANO demo</title>
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css"/>
     <link rel="stylesheet" href="/static/node_modules/leaflet.photon/leaflet.photon.css"/>
+    <link rel="stylesheet" href="/static/node_modules/leaflet-editinosm/Leaflet.EditInOSM.css" />
     <style type="text/css">
         div, ul, li, a, section, nav,
         h1, h2, h3, h4, h5, h6,
@@ -34,6 +35,7 @@
 <script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet-src.js"></script>
 <script src="/static/node_modules/leaflet.photon/leaflet.photon.js"></script>
 <script src="/static/node_modules/leaflet-hash/leaflet-hash.js"></script>
+<script src="/static/node_modules/leaflet-editinosm/Leaflet.EditInOSM.js"></script>
 <script type="text/javascript">
     API_URL = '{{ API_URL }}';
     TILELAYER = '{{ TILELAYER }}';
@@ -69,7 +71,11 @@
         url: API_URL,
         formatResult: formatResult
     };
-    var map = L.map('map', {zoomControl: false, photonControl: true, photonControlOptions: photonControlOptions});
+    var editInOSMControlOptions = {
+        widget: 'attributionBox',
+        position: 'bottomleft'
+    };
+    var map = L.map('map', {zoomControl: false, photonControl: true, photonControlOptions: photonControlOptions, editInOSMControlOptions: editInOSMControlOptions});
     map.setView(CENTER, 12);
     searchPoints.addTo(map);
     new L.Hash(map);
