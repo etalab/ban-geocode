@@ -2,6 +2,7 @@ import csv
 import datetime
 import os
 import sys
+import re
 
 from pathlib import Path
 
@@ -79,19 +80,35 @@ def row_to_doc(row):
         "context": context,
         "type": type_,
     }
+    name = row.get('name')
+    way_label = None
+    way_keywords = None
+    if name:
+        split = split_address(name)
+        if split:
+            way_label = split['type']
+            way_keywords = split['name']
+
+    if way_label:
+        doc['way_label'] = way_label
+
     if type_ == 'housenumber':
         doc['housenumber'] = row['housenumber']
-        doc['street'] = {'default': row['name']}
+        doc['street'] = {'default': name}
+        if way_keywords:
+            doc['street']['keywords'] = way_keywords
     elif type_ in ['street', 'locality']:
-        doc['name'] = {"default": row['name']}
+        doc['name'] = {"default": name}
     elif type_ in ['village', 'town', 'city', 'commune']:
         doc['importance'] = 1
         # Sometimes, a village is in reality an hamlet, so it has both a name
         # (the hamlet name) and a city (the administrative entity it belongs
         # to), this is why we first look if a name exists.
-        doc['name'] = {'default': row.get('name') or row.get('city')}
+        doc['name'] = {'default': name or row.get('city')}
     else:
-        doc['name'] = {'default': row.get('name')}
+        doc['name'] = {'default': name}
+    if way_keywords and 'name' in doc:
+        doc['name']['keywords'] = way_keywords
     return doc
 
 
@@ -119,6 +136,27 @@ def import_data(index, filepath, limit=None):
             sys.stdout.write("Done {}\n".format(count))
 
 
+TYPES = [
+    'avenue', 'rue', 'boulevard', 'all[ée]es?', 'impasse', 'place',
+    'chemin', 'rocade', 'route', 'l[ôo]tissement', 'mont[ée]e', 'c[ôo]te',
+    'clos', 'champ', 'bois', 'taillis', 'boucle', 'passage', 'domaine',
+    'étang', 'etang', 'quai', 'desserte', 'pré', 'porte', 'square', 'mont',
+    'r[ée]sidence', 'parc', 'cours?', 'promenade', 'hameau', 'faubourg',
+    'ilot', 'berges?', 'via', 'cit[ée]', 'sent(e|ier)', 'rond[- ][Pp]oint',
+    'pas(se)?', 'carrefour', 'traverse', 'giratoire', 'esplanade', 'voie',
+]
+TYPES_REGEX = '|'.join(
+    map(lambda x: '[{}{}]{}'.format(x[0], x[0].upper(), x[1:]), TYPES)
+)
+
+
+def split_address(q):
+    m = re.search(
+        "^(?P<type>" + TYPES_REGEX + ")"
+        "[a-z ']+(?P<name>[\wçàèéuâêôîûöüïäë '\-]+)", q)
+    return m.groupdict() if m else {}
+
+
 MAPPINGS = {
     "place": {
         "dynamic": "false",
@@ -131,6 +169,10 @@ MAPPINGS = {
                 "type": "string",
                 "index_analyzer": "housenumber_analyzer",
                 "copy_to": ["collector"]
+            },
+            "way_label": {
+                "type": "string",
+                "index_analyzer": "raw_stringanalyzer"
             },
             "coordinate": {"type": "geo_point"},
             "postcode": {
@@ -165,11 +207,18 @@ MAPPINGS = {
                 "type": "object",
                 "properties": {
                     "default": {
+                        "index": "no",
                         "type": "string",
                         "index_analyzer": "raw_stringanalyzer",
                         "copy_to": ["collector"],
                     },
                     "alt": {
+                        "index": "no",
+                        "type": "string",
+                        "index_analyzer": "raw_stringanalyzer",
+                        "copy_to": ["collector"]
+                    },
+                    "keywords": {
                         "type": "string",
                         "index_analyzer": "raw_stringanalyzer",
                         "copy_to": ["collector"]
@@ -180,12 +229,18 @@ MAPPINGS = {
                 "type": "object",
                 "properties": {
                     "default": {
+                        "index": "no",
                         "type": "string",
                         "copy_to": ["collector"]
                     },
                     "alt": {
                         "index": "no",
                         "type": "string",
+                        "copy_to": ["collector"]
+                    },
+                    "keywords": {
+                        "type": "string",
+                        "index_analyzer": "raw_stringanalyzer",
                         "copy_to": ["collector"]
                     }
                 }

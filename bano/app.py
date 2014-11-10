@@ -84,17 +84,29 @@ def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
             'analyzer': 'search_stringanalyzer'
         })],
         should=[
-            Q('match', **{'name.default': {
+            Q('match', **{'name.keywords': {
                 'query': q,
                 'boost': 200
             }}),
-            Q('match', **{'street.default': {
+            Q('match', **{'street.keywords': {
                 'query': q,
                 'boost': 100
+            }}),
+            Q('match', **{'street.default': {
+                'query': q,
+                'boost': 50
+            }}),
+            Q('match', **{'name.default': {
+                'query': q,
+                'boost': 50
             }}),
             Q('match', **{'city.default': {
                 'query': q,
                 'boost': 50
+            }}),
+            Q('match', **{'way_label': {
+                'query': q,
+                'boost': 10
             }}),
         ]
     )
@@ -135,7 +147,7 @@ def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
             F({"query": {"match": {"housenumber": {"query": q, "analyzer": "housenumber_analyzer"}}}}),
             F('exists', field="name.default")
         ])
-    s = s.filter(filter_house)
+        s = s.filter(filter_house)
     if filters:
         # We are not using real filters here, because filters are not analyzed,
         # so for example "city=Chauny" will not match, because "chauny" is in
