@@ -27,9 +27,9 @@ from bano.app import app
 
 if __name__ == '__main__':
     args = docopt(__doc__, version='Bano Search 0.1')
-    DEBUG = args['--debug'] or os.environ.get('DEBUG', False)
+    app.debug = args['--debug'] or os.environ.get('DEBUG', False)
     if args['serve']:
-        app.run(debug=DEBUG, port=int(args['--port']), host=args['--host'])
+        app.run(port=int(args['--port']), host=args['--host'])
     elif args['import']:
         name = create_index(args['--index'])
         if args['--limit']:
