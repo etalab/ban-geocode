@@ -86,19 +86,23 @@ def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
         should=[
             Q('match', **{'name.keywords': {
                 'query': q,
-                'boost': 200
+                'boost': 2,
+                'analyzer': 'search_stringanalyzer'
             }}),
             Q('match', **{'street.keywords': {
                 'query': q,
-                'boost': 100
+                'boost': 2,
+                'analyzer': 'search_stringanalyzer'
             }}),
             Q('match', **{'city.default': {
                 'query': q,
-                'boost': 50
+                'boost': 2,
+                'analyzer': 'search_stringanalyzer'
             }}),
             Q('match', **{'way_label': {
                 'query': q,
-                'boost': 10
+                'boost': 2,
+                'analyzer': 'search_stringanalyzer'
             }}),
         ]
     )
