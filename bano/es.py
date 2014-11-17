@@ -92,8 +92,14 @@ def row_to_doc(row):
     if way_label:
         doc['way_label'] = way_label
 
-    if type_ == 'housenumber':
-        doc['housenumber'] = row['housenumber']
+    housenumber = row.get('housenumber')
+    if housenumber:
+        els = split_housenumber(housenumber)
+        if els:
+            doc['housenumber'] = els['number']
+            doc['ordinal'] = els['ordinal']
+        else:
+            doc['housenumber'] = housenumber
         doc['street'] = {'default': name}
         if way_keywords:
             doc['street']['keywords'] = way_keywords
@@ -157,6 +163,11 @@ def split_address(q):
     return m.groupdict() if m else {}
 
 
+def split_housenumber(q):
+    m = re.search("^(?P<number>[\d]+)/?(?P<ordinal>([^\d]+|[\d]{1}))?", q)
+    return m.groupdict() if m else {}
+
+
 MAPPINGS = {
     "place": {
         "dynamic": "false",
@@ -166,6 +177,11 @@ MAPPINGS = {
             "type": {"type": "string"},
             "importance": {"type": "float"},
             "housenumber": {
+                "type": "string",
+                "index_analyzer": "housenumber_analyzer",
+                "copy_to": ["collector"]
+            },
+            "ordinal": {
                 "type": "string",
                 "index_analyzer": "housenumber_analyzer",
                 "copy_to": ["collector"]
@@ -209,19 +225,16 @@ MAPPINGS = {
                     "default": {
                         "index": "no",
                         "type": "string",
-                        "index_analyzer": "raw_stringanalyzer",
                         "copy_to": ["collector"],
                     },
                     "alt": {
                         "index": "no",
                         "type": "string",
-                        "index_analyzer": "raw_stringanalyzer",
                         "copy_to": ["collector"]
                     },
                     "keywords": {
                         "type": "string",
                         "index_analyzer": "raw_stringanalyzer",
-                        "copy_to": ["collector"]
                     },
                 },
             },
@@ -241,7 +254,6 @@ MAPPINGS = {
                     "keywords": {
                         "type": "string",
                         "index_analyzer": "raw_stringanalyzer",
-                        "copy_to": ["collector"]
                     }
                 }
             },

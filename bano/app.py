@@ -8,11 +8,11 @@ import re
 import elasticsearch
 from elasticsearch_dsl import Search, Q
 from elasticsearch_dsl.filter import F
+from elasticsearch_dsl.query import Match, Filtered
 from flask import Flask, render_template, request, abort, Response
 
 
 app = Flask(__name__)
-DEBUG = os.environ.get('DEBUG', True)
 PORT = os.environ.get('BANO_PORT', 5001)
 HOST = os.environ.get('BANO_HOST', '0.0.0.0')
 API_URL = os.environ.get('API_URL', '/search/?')
@@ -92,14 +92,6 @@ def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
                 'query': q,
                 'boost': 100
             }}),
-            Q('match', **{'street.default': {
-                'query': q,
-                'boost': 50
-            }}),
-            Q('match', **{'name.default': {
-                'query': q,
-                'boost': 50
-            }}),
             Q('match', **{'city.default': {
                 'query': q,
                 'boost': 50
@@ -139,13 +131,20 @@ def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
     )
 
     s = s.query(fscore)
-    if not filters.get('type') == 'housenumber':
-        # Only filter out 'house' if we are not explicitly asking for this
-        # type.
+    # Only filter out 'house' if we are not explicitly asking for this
+    # type.
+    if filters.get('type') is not 'housenumber':
+        # We don't want results with an ordinal (bis, ter…) if the ordinal
+        # field itself doesn't match
+        filter_ordinal = F('or', [
+            F('missing', field="ordinal"),
+            F({"query": {"match": {"ordinal": {"query": q, "analyzer": "housenumber_analyzer"}}}}),
+        ])
+        house_query = Filtered(query=Match(housenumber={"query": q, "analyzer": "housenumber_analyzer"}), filter=filter_ordinal)
         filter_house = F('or', [
             F('missing', field="housenumber"),
-            F({"query": {"match": {"housenumber": {"query": q, "analyzer": "housenumber_analyzer"}}}}),
-            F('exists', field="name.default")
+            F('exists', field="name.keywords"),
+            F({'query': house_query.to_dict()}),
         ])
         s = s.filter(filter_house)
     if filters:
@@ -159,7 +158,7 @@ def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
 
 def query_index(q, lon, lat, match_all=True, limit=15, filters=None):
     s = make_query(q, lon, lat, match_all, limit, filters)
-    if DEBUG:
+    if app.debug:
         print(json.dumps(s.to_dict()))
     return s.execute()
 
@@ -297,7 +296,7 @@ def to_geo_json(hits, debug=False):
 
         flat_keys = [
             'osm_key', 'osm_value', 'postcode', 'housenumber', 'type',
-            'context'
+            'context', 'ordinal'
         ]
         for attr in flat_keys:
             if hasattr(hit, attr):
@@ -310,10 +309,12 @@ def to_geo_json(hits, debug=False):
                 properties[attr] = value
 
         if not 'name' in properties and 'housenumber' in properties:
-            housenumber = properties['housenumber'] or ''
+            housenumber = properties.get('housenumber', '')
+            ordinal = properties.get('ordinal', '')
             street = properties.get('street', '')
+            els = [housenumber, ordinal, street]
 
-            properties['name'] = ' '.join([housenumber, street])
+            properties['name'] = ' '.join([el for el in els if el])
 
         feature = {
             "type": "Feature",
