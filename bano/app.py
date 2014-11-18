@@ -104,6 +104,11 @@ def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
                 'boost': 2,
                 'analyzer': 'search_stringanalyzer'
             }}),
+            Q('match', **{'housenumber': {
+                'query': q,
+                'boost': 2,
+                'analyzer': 'housenumber_analyzer'
+            }}),
         ]
     )
 
