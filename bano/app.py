@@ -72,8 +72,6 @@ def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
         filters = {}
     s = Search(es).index(INDEX)
     should_match = '100%' if match_all else '2<-1 6<-2 8<-3 10<-50%'
-    # if not match_all:
-    #     q = preprocess(q)
     match = Q(
         'bool',
         must=[Q('match', collector={
@@ -167,8 +165,7 @@ def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
 
 def query_index(q, lon, lat, match_all=True, limit=15, filters=None):
     s = make_query(q, lon, lat, match_all, limit, filters)
-    if app.debug:
-        print(json.dumps(s.to_dict()))
+    stdout(json.dumps(s.to_dict()))
     return s.execute()
 
 
@@ -200,16 +197,19 @@ def search():
                 key = '{}.default'.format(key)
             filters[key] = value
 
+    stdout('Trying with', query)
     results = query_index(query, lon, lat, limit=limit, filters=filters)
 
     if len(results.hits) < 1:
         query = preprocess(query)
+        stdout('Trying with', query)
         results = query_index(query, lon, lat,
                               match_all=True, limit=limit, filters=filters)
 
     if len(results.hits) < 1:
         # Try without any number.
         no_num = re.sub('[\d]*', '', query)
+        stdout('Trying with', no_num)
         results = query_index(no_num, lon, lat,
                               match_all=True, limit=limit, filters=filters)
 
@@ -217,12 +217,14 @@ def search():
         # Try matching a standard address pattern.
         match = match_address(query)
         if match:
+            stdout('Trying with', match)
             results = query_index(match, lon, lat,
                                   match_all=False, limit=limit, filters=filters)
 
     if len(results.hits) < 1:
         # No result could be found, query index again and don't expect to match
         # all search terms.
+        stdout('Trying with match_all=False', query)
         results = query_index(query, lon, lat,
                               match_all=False, limit=limit, filters=filters)
 
@@ -359,3 +361,8 @@ def to_flat_address(hit):
 def is_bool(what):
     what = str(what).lower()
     return what in ['true', '1']
+
+
+def stdout(*what):
+    if app.debug:
+        print(*what)
