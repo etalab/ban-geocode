@@ -260,12 +260,6 @@ MAPPINGS = {
             "collector": {
                 "type": "string",
                 "analyzer": "stringanalyzer",
-                "fields": {
-                    "raw": {
-                        "type": "string",
-                        "analyzer": "raw_stringanalyzer"
-                    }
-                }
             },
         }
     }
