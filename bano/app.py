@@ -224,8 +224,8 @@ def search():
     return response
 
 
-@app.route('/multisearch/', methods=['GET', 'POST'])
-def multi_search():
+@app.route('/csv/', methods=['GET', 'POST'])
+def _csv():
     if request.method == 'POST':
         f = request.files['data']
         first_line = next(f.stream).decode().strip('\n')
