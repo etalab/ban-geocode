@@ -8,7 +8,7 @@ import re
 import elasticsearch
 from elasticsearch_dsl import Search, Q
 from elasticsearch_dsl.filter import F
-from elasticsearch_dsl.query import Match, Filtered
+from elasticsearch_dsl.query import Match, Filtered, MatchAll
 from flask import Flask, render_template, request, abort, Response
 
 
@@ -50,21 +50,6 @@ def index():
         TILELAYER=TILELAYER,
         MAXZOOM=MAXZOOM
     )
-
-
-def preprocess(q):
-    q = re.sub('(Cedex|Cédex) ?[\d]*', '', q, flags=re.IGNORECASE)
-    q = re.sub('bp ?[\d]*', '', q, flags=re.IGNORECASE)
-    q = re.sub('cs ?[\d]*', '', q, flags=re.IGNORECASE)
-    q = re.sub(' {2,}', ' ', q, flags=re.IGNORECASE)
-    q = q.strip()
-    return q
-
-
-def match_address(q):
-    m = re.search('([\d]*(,? )?(avenue|rue|boulevard|allées?|impasse|place) .*([\d]{5})?).*', q, flags=re.IGNORECASE)
-    if m:
-        return m.group()
 
 
 def make_query(q, lon=None, lat=None, match_all=True, limit=15, filters=None):
@@ -235,8 +220,7 @@ def search():
     data = to_geo_json(results, debug=debug)
     data = json.dumps(data, indent=4 if debug else None)
     response = Response(data, mimetype='application/json')
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "X-Requested-With"
+    cors(response)
     return response
 
 
@@ -257,7 +241,7 @@ def multi_search():
             q = ' '.join({k: row[k] for k in columns}.values())
             queries.append(q)
             query = make_query(q, limit=1, match_all=match_all)
-            search.append({'index': 'bano'})
+            search.append({'index': INDEX})
             search.append(query.to_dict())
         responses = []
         start = 0
@@ -297,6 +281,37 @@ def multi_search():
         return output.read(), 200, headers
     if 'text/html' in request.headers['Accept']:
         return render_template('multisearch.html')
+
+
+@app.route('/reverse/')
+def reverse():
+    try:
+        lon = float(request.args.get('lon'))
+        lat = float(request.args.get('lat'))
+    except (TypeError, ValueError):
+        lon = lat = None
+
+    if not lat or not lon:
+        abort(400, "missing 'lon' or 'lat': /?lon=2.0984&lat=48.0938")
+
+    s = Search(es).index(INDEX).query(MatchAll()).extra(size=1).sort({
+        "_geo_distance": {
+            "coordinate": {
+                "lat": lat,
+                "lon": lon
+            },
+            "order": "asc"
+        }})
+    results = s.execute()
+    if len(results.hits) < 1:
+        notfound.debug(query)
+
+    debug = 'debug' in request.args
+    data = to_geo_json(results, debug=debug)
+    data = json.dumps(data, indent=4 if debug else None)
+    response = Response(data, mimetype='application/json')
+    cors(response)
+    return response
 
 
 def to_geo_json(hits, debug=False):
@@ -365,4 +380,24 @@ def is_bool(what):
 
 def stdout(*what):
     if app.debug:
-        print(*what)
+        print(*what)  #noqa
+
+
+def preprocess(q):
+    q = re.sub('(Cedex|Cédex) ?[\d]*', '', q, flags=re.IGNORECASE)
+    q = re.sub('bp ?[\d]*', '', q, flags=re.IGNORECASE)
+    q = re.sub('cs ?[\d]*', '', q, flags=re.IGNORECASE)
+    q = re.sub(' {2,}', ' ', q, flags=re.IGNORECASE)
+    q = q.strip()
+    return q
+
+
+def match_address(q):
+    m = re.search('([\d]*(,? )?(avenue|rue|boulevard|allées?|impasse|place) .*([\d]{5})?).*', q, flags=re.IGNORECASE)
+    if m:
+        return m.group()
+
+
+def cors(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "X-Requested-With"
