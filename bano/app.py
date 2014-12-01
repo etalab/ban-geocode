@@ -302,9 +302,13 @@ def reverse():
             },
             "order": "asc"
         }})
+    _type = request.args.get('type', None)
+    if _type:
+        s = s.query({'match': {'type': _type}})
     results = s.execute()
     if len(results.hits) < 1:
-        notfound.debug(query)
+        notfound.debug('reverse: lat: {}, lon: {}, type: {}'.format(
+            lat, lon, _type))
 
     debug = 'debug' in request.args
     data = to_geo_json(results, debug=debug)
