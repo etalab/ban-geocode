@@ -224,7 +224,7 @@ def search():
     return response
 
 
-@app.route('/csv/', methods=['GET', 'POST'])
+@app.route('/csv/', methods=['GET', 'POST', 'OPTIONS'])
 def _csv():
     if request.method == 'POST':
         f = request.files['data']
@@ -274,13 +274,17 @@ def _csv():
                     notfound.debug(q)
             writer.writerow(row)
         output.seek(0)
-        headers = {
-            'Content-Disposition': 'attachment',
-            'Content-Type': 'text/csv'
-        }
-        return output.read(), 200, headers
+        response = Response(output.read())
+        response.headers['Content-Disposition'] = 'attachment'
+        response.headers['Content-Type'] = 'text/csv'
+        cors(response)
+        return response
+    elif request.method == 'OPTIONS':
+        response = Response('')
+        cors(response)
+        return response
     if 'text/html' in request.headers['Accept']:
-        return render_template('multisearch.html')
+        return render_template('csv.html')
 
 
 @app.route('/reverse/')
