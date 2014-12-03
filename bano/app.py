@@ -204,7 +204,8 @@ def search():
         if match:
             stdout('Trying with', match)
             results = query_index(match, lon, lat,
-                                  match_all=False, limit=limit, filters=filters)
+                                  match_all=False, limit=limit,
+                                  filters=filters)
 
     if len(results.hits) < 1:
         # No result could be found, query index again and don't expect to match
@@ -218,6 +219,8 @@ def search():
 
     debug = 'debug' in request.args
     data = to_geo_json(results, debug=debug)
+    data['query'] = request.args.get('q')
+    data['version'] = '0.0.1'
     data = json.dumps(data, indent=4 if debug else None)
     response = Response(data, mimetype='application/json')
     cors(response)
@@ -349,6 +352,7 @@ def to_geo_json(hits, debug=False):
             els = [housenumber, ordinal, street]
 
             properties['name'] = ' '.join([el for el in els if el])
+        properties['label'] = to_flat_address(hit)
 
         feature = {
             "type": "Feature",
