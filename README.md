@@ -34,7 +34,7 @@ Step to install the python environment:
 1. get the project
 
     ```
-    git clone https://github.com/yohanboniface/bano-geocode.git
+    git clone https://github.com/etalab/ban-geocode.git
     cd bano-geocode
     ```
 
